@@ -345,21 +345,22 @@ const roleBadge = (role) => {
 // ─── Login View ───────────────────────────────────────────────────────────────
 const LoginView = ({ onLogin, onSwitch, on2FA }) => {
   const { login } = useAuth();
-  const [email, setEmail] = useState("sophia@lms.dev");
-  const [pass, setPass] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   const handle = async () => {
+    if (!email || !pass) return setErr("Please enter email and password");
     setLoading(true); setErr("");
-    await new Promise(r => setTimeout(r, 900));
-    if (email && pass.length >= 6) {
-      const lowerEmail = email.toLowerCase();
-      if (lowerEmail === "sophia@lms.dev") { on2FA(); }
-      else { await login(email, pass); }
-    } else setErr("Invalid credentials. Please try again.");
-    setLoading(false);
+    try {
+      await login(email, pass);
+    } catch (err) {
+      setErr(err.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -380,14 +381,14 @@ const LoginView = ({ onLogin, onSwitch, on2FA }) => {
         </div>
 
         <div className="card" style={{ padding: 28 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <form onSubmit={e => { e.preventDefault(); handle(); }} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {err && <div className="alert alert-red"><Icon name="alertTriangle" size={15} />{err}</div>}
 
             <div className="input-wrap">
               <label className="input-label">Email address</label>
               <div className="input-icon-wrap">
                 <span className="input-icon"><Icon name="mail" size={15} /></span>
-                <input className="input-field" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+                <input className="input-field" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
             </div>
 
@@ -398,14 +399,14 @@ const LoginView = ({ onLogin, onSwitch, on2FA }) => {
               </div>
               <div className="input-icon-wrap">
                 <span className="input-icon"><Icon name="lock" size={15} /></span>
-                <input className="input-field" type={showPass ? "text" : "password"} placeholder="••••••••" value={pass} onChange={e => setPass(e.target.value)} style={{ paddingRight: 44 }} />
+                <input className="input-field" type={showPass ? "text" : "password"} placeholder="••••••••" value={pass} onChange={e => setPass(e.target.value)} style={{ paddingRight: 44 }} required />
                 <span onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--text3)' }}>
                   <Icon name={showPass ? "eyeOff" : "eye"} size={15} />
                 </span>
               </div>
             </div>
 
-            <button className="btn btn-amber" style={{ width: '100%', justifyContent: 'center', padding: '12px 20px' }} onClick={handle} disabled={loading}>
+            <button type="submit" className="btn btn-amber" style={{ width: '100%', justifyContent: 'center', padding: '12px 20px' }} disabled={loading}>
               {loading ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #00000044', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> : null}
               {loading ? "Signing in…" : "Sign In"}
             </button>
@@ -418,24 +419,18 @@ const LoginView = ({ onLogin, onSwitch, on2FA }) => {
 
             <div style={{ display: 'flex', gap: 10 }}>
               {[{ icon: 'google', label: 'Google' }, { icon: 'microsoft', label: 'Microsoft' }].map(p => (
-                <button key={p.icon} className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', gap: 8 }}>
+                <button key={p.icon} type="button" className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center', gap: 8 }}>
                   <Icon name={p.icon} size={16} />{p.label}
                 </button>
               ))}
             </div>
-          </div>
+          </form>
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text2)' }}>
           Don't have an account?{' '}
           <span onClick={onSwitch} style={{ color: 'var(--amber)', fontWeight: 600, cursor: 'pointer' }}>Create account</span>
         </p>
-
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <span style={{ fontSize: 11, color: 'var(--text3)' }}>
-            Demo: sophia@lms.dev (triggers 2FA) · any other email skips 2FA
-          </span>
-        </div>
       </div>
     </div>
   );

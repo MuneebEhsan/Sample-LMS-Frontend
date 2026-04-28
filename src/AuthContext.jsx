@@ -13,43 +13,35 @@ export function AuthProvider({ children }) {
   const [loading, setLoading]= useState(true);
   const [error,   setError]  = useState(null);
 
-  // Force login screen every time the app loads for prototyping
+  // Check for existing session on load
   useEffect(() => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    const token = localStorage.getItem('access_token');
+    const savedUser = localStorage.getItem('user');
+    const tid = localStorage.getItem('tenant_id');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+      setTenant(tid);
+    }
     setLoading(false);
   }, []);
 
-  const login = useCallback(async (email, password, tenantSlug) => {
+  const login = useCallback(async (email, password) => {
     setError(null);
     try {
-      // Mock login for frontend-only demo (backend docker is offline)
-      let mockUser;
-      const lowerEmail = email.toLowerCase();
-      if (lowerEmail === "sophia@lms.dev") {
-        mockUser = { id: 1, name: "Sophia Chen", email, roles: ["Super Admin"], tenantId: tenantSlug || 'T001' };
-      } else if (lowerEmail === "m.rivera@lms.dev") {
-        mockUser = { id: 2, name: "Marcus Rivera", email, roles: ["Admin"], tenantId: tenantSlug || 'T002' };
-      } else if (lowerEmail === "aisha@lms.dev") {
-        mockUser = { id: 3, name: "Aisha Patel", email, roles: ["Instructor"], tenantId: tenantSlug || 'T001' };
-      } else if (lowerEmail === "jweber@lms.dev") {
-        mockUser = { id: 4, name: "Jonas Weber", email, roles: ["Student"], tenantId: tenantSlug || 'T001' };
-      } else if (lowerEmail === "staff@lms.dev") {
-        mockUser = { id: 5, name: "Elena R.", email, roles: ["Staff"], tenantId: tenantSlug || 'T001' };
-      } else {
-        mockUser = { id: 99, name: "Demo User", email, roles: ["Student"], tenantId: tenantSlug || 'T001' };
-      }
+      const { data } = await AuthAPI.login({ email, password });
+      
+      const { accessToken, refreshToken, user: userData } = data;
 
-      localStorage.setItem('access_token',  'mock_access_token');
-      localStorage.setItem('refresh_token', 'mock_refresh_token');
-      localStorage.setItem('user',          JSON.stringify(mockUser));
-      localStorage.setItem('tenant_id',     mockUser.tenantId || '');
-      setUser(mockUser);
-      setTenant(mockUser.tenantId);
-      return { user: mockUser };
+      localStorage.setItem('access_token',  accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      localStorage.setItem('user',          JSON.stringify(userData));
+      localStorage.setItem('tenant_id',     userData.tenantId || '');
+      
+      setUser(userData);
+      setTenant(userData.tenantId);
+      return { user: userData };
     } catch (err) {
-      const msg = err.response?.data?.error || 'Login failed';
+      const msg = err.response?.data?.message || 'Login failed';
       setError(msg);
       throw new Error(msg);
     }
