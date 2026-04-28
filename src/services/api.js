@@ -4,7 +4,7 @@
  */
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_URL || '/api/v1';
+const BASE = 'https://bk.taleem.life/api/v1';
 
 const api = axios.create({ baseURL: BASE, timeout: 15000,
   headers: { 'Content-Type': 'application/json' } });
